@@ -11,21 +11,21 @@
 </template>
 
 <script>
-	import Item from "./Item";
+import Item from "./Item";
 
-	export default {
-		name: "Parent",
-		props: {
-          children: Array,
-		},
-        computed: {
-            loop: () => 0 //Math.random() > 0.5,
-        },
-		components: { Item },
-		data: () => ({
-			items: [...Array((Math.ceil(Math.random() * 3) + 1)).keys()]
-		})
-	};
+export default {
+    name: "Parent",
+    props: {
+      children: Array,
+    },
+    computed: {
+        loop: () => 0 //Math.random() > 0.5,
+    },
+    components: { Item },
+    data: () => ({
+        items: [...Array((Math.ceil(Math.random() * 3) + 2)).keys()]
+    })
+};
 </script>
 
 <style scoped>

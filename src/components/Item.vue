@@ -5,19 +5,19 @@
 </template>
 
 <script>
-	export default {
-		name: "Item",
-		props: {
-			index: Number,
-			children: Array
-		},
-        computed: {
+export default {
+    name: "Item",
+    props: {
+        index: Number,
+        children: Array
+    },
+    computed: {
 
-        },
-        data: () => ({
+    },
+    data: () => ({
 
-        })
-	};
+    })
+};
 </script>
 
 <style scoped>

@@ -1,6 +1,6 @@
 <template>
     <div class="body">
-        <Block v-focus:navigate.up.right class="block"></Block>
+        <Block v-focus:navigate.right class="block"></Block>
         <div class="parents">
             <Parent
                 v-focus:navigate.up.down.left

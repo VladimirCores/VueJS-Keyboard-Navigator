@@ -17,5 +17,5 @@ const emit = (up) => {
 
 new Vue({
   render: h => h(App),
-  mounted: emit
+  // mounted: emit
 }).$mount("#app");

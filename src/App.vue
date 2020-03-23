@@ -1,18 +1,18 @@
 <template>
   <div id="app">
     <Item class="special" v-selected v-focus:navigate.down :index="111"/>
-    <Body v-focus :items="items"/>
-    <div class="body">
-      <Block v-focus:navigate.up.right class="block"></Block>
-      <div class="parents">
-        <Parent
-          v-focus:navigate.up.down.left
-          v-for="(item, index) in items"
-          :key="index"
-          :index="item"
-        />
-      </div>
-    </div>
+    <Body v-focus:navigate.up :items="items"/>
+<!--    <div class="body">-->
+<!--      <Block v-focus:navigate.up.right class="block"></Block>-->
+<!--      <div class="parents">-->
+<!--        <Parent-->
+<!--          v-focus:navigate.up.down.left-->
+<!--          v-for="(item, index) in items"-->
+<!--          :key="index"-->
+<!--          :index="item"-->
+<!--        />-->
+<!--      </div>-->
+<!--    </div>-->
   </div>
 </template>
 
@@ -28,7 +28,7 @@
     props: { children: Array },
     components: {Body, Parent, Block, Item },
     data: () => ({
-      items: [...Array(3).keys()]
+      items: [...Array(2).keys()]
     }),
     beforeCreate() {
       Navigator.init()

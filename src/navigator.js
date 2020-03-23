@@ -1,4 +1,3 @@
-let _selectedVNode;
 let _selectedDom;
 
 function findElement(name, currentNode, level = 0) {
@@ -31,13 +30,15 @@ class Navigator {
 	
 	static getPrevElement(element, loop) {
 		const parentElement = findElement(element.parent, Navigator.tree)
-		const children = parentElement.children
-		const prevElementIndex = element.index - 1
-		console.log('> \t\tgetPrevElement > ', prevElementIndex, children.length, parentElement)
-		if (prevElementIndex > -1) {
-			return parentElement[children[prevElementIndex]]
-		} else if (loop) {
-			return parentElement[children[children.length - 1]]
+		if (parentElement) {
+			const children = parentElement.children
+			const prevElementIndex = element.index - 1
+			console.log('> \t\tgetPrevElement > ', prevElementIndex, children.length, parentElement)
+			if (prevElementIndex > -1) {
+				return parentElement[children[prevElementIndex]]
+			} else if (loop) {
+				return parentElement[children[children.length - 1]]
+			}
 		}
 		else null
 	}
@@ -45,14 +46,15 @@ class Navigator {
 	static getNextElement(element, loop) {
 		const parentElement = findElement(element.parent, Navigator.tree)
 		const children = parentElement.children
-		const nextElementIndex = element.index + 1
+		let nextElementIndex = loop ? 0 : element.index + 1
+		let result = null
 		console.log('> \t\tgetNextElement > :', nextElementIndex, children.length)
-		if (nextElementIndex < parentElement.numChildren) {
-			return parentElement[children[nextElementIndex]]
-		} else if (loop) {
-			return parentElement[children[0]]
-		}
-		else null
+		
+		if (nextElementIndex < parentElement.numChildren || loop)
+			result = parentElement[children[nextElementIndex]]
+		
+		parentElement.selectedIndex = nextElementIndex
+		return result
 	}
 	
 	static registerFocusElement(parent, child) {
@@ -66,6 +68,7 @@ class Navigator {
 					childNode.parent = parent
 					parentNode[child] = childNode
 				} else {
+					// console.log('\t\tnew child: '+ child, parent)
 					childNode = parentNode[child] = { name: child, parent: parent, numChildren: 0, index: parentNode.numChildren || 0 }
 				}
 				parentNode.numChildren = parentNode.numChildren ? parentNode.numChildren + 1 : 1
@@ -73,11 +76,20 @@ class Navigator {
 				childNode.index = parentNode.children.length
 				parentNode.children.push(child)
 			} else {
+				childNode = findElement(child, Navigator.tree)
 				parentNode = Navigator.tree[parent] || (Navigator.tree[parent] = {})
-				parentNode[child] = childNode = { name: child, parent: parent, numChildren: 0, index: 0 }
+				if (childNode && Navigator.tree[child]) {
+					childNode.parent = parent
+					childNode.index = 0
+					delete Navigator.tree[child]
+				}
+				else childNode = { name: child, parent: parent, numChildren: 0, index: 0 }
+				parentNode[child] = childNode
 				parentNode.numChildren = 1
 				parentNode.children = [child]
 				parentNode.name = parent
+				parentNode.selectedIndex = 0
+				// console.log("\t\tno parent: " + parent, child, parentNode)
 			}
 			return childNode
 		} else if (!Navigator.tree[child]) {
@@ -92,68 +104,88 @@ function selectElement(prev, next) {
 	next.classList.add("selected")
 }
 
-function findNextElement (node, index, reverse) {
-	let nextElement = reverse ? Navigator.getPrevElement(node) : Navigator.getNextElement(node)
+function findNextElement (node, index, reverse, loop) {
+	let nextElement = reverse ? Navigator.getPrevElement(node, !!loop) : Navigator.getNextElement(node, !!loop)
 	if (nextElement && nextElement.numChildren > 0) {
+		console.log('> \t\tfindNextElement:', nextElement.name, nextElement.parent, nextElement.children)
 		const nextIndex = !isNaN(index) && index < nextElement.numChildren ? index : nextElement.numChildren - 1
+		nextElement.selectedIndex = nextIndex
 		nextElement = nextElement[nextElement.children[nextIndex]]
 	}
 	return nextElement
 }
 
+function lookUpForParentNavigation(parent, iteration = 0) {
+	let parentElement = findElement(parent, Navigator.tree)
+	console.log(`> \tlookUpForParentNavigation -> parent =`, parent, iteration, parentElement)
+	if (parentElement && parentElement.navigate && !parentElement.navigate.up) // Go to the next level up
+		return lookUpForParentNavigation(parentElement.parent, ++iteration)
+	// console.log(`> \tlookUpForParentNavigation -> parentElement.name =`, parentElement.name, parentElement.navigate)
+	return { parentElement, iteration }
+}
+
+function lookDownForChildrenNavigation(parentElement) {
+	console.log(`> \t\tlookDownForChildrenNavigation -> parentElement =`, parentElement)
+	let child = parentElement
+	if (parentElement && parentElement.numChildren > 0) {
+		child = lookDownForChildrenNavigation(parentElement[parentElement.children[0]])
+	}
+	return child
+}
+
 function handleKeyUp(e) {
-	const selectedNode = Navigator.findNodeForID(_selectedDom.id)
-	const selectedNodeIndex = selectedNode.index
-	const allowedNavigation = selectedNode.navigate
-	let nextElement
-	console.log(`> ${e.key}: selectedNode.navigate =`, selectedNode.navigate)
+	const selectedElement = Navigator.findNodeForID(_selectedDom.id)
+	const selectedElementIndex = selectedElement.index
+	const allowedNavigation = selectedElement.navigate
+	let nextElement = null
+	console.log(`> ${e.key}: selectedNode.navigate =`, allowedNavigation)
 	if (e.key === 'ArrowDown') {
-		if (allowedNavigation.down) nextElement = findNextElement(selectedNode, selectedNodeIndex)
+		if (allowedNavigation.down) {
+			nextElement = lookDownForChildrenNavigation(findNextElement(selectedElement, selectedElementIndex))
+		}
 		else { // If navigate down from child element than does not have navigation - choose parent
-			const parent = findElement(selectedNode.parent, Navigator.tree)
+			const parent = findElement(selectedElement.parent, Navigator.tree)
 			console.log(`> \t: parent =`, parent)
-			if (parent && parent.navigate && parent.navigate.down) nextElement = findNextElement(parent, selectedNodeIndex)
+			if (parent && parent.navigate && parent.navigate.down) nextElement = findNextElement(parent, selectedElementIndex)
 		}
 	}
 	else if (e.key === 'ArrowUp') {
-		if (allowedNavigation.up) nextElement = findNextElement(selectedNode, selectedNodeIndex, true)
+		if (allowedNavigation.up) {
+			nextElement = findNextElement(selectedElement, selectedElementIndex, true)
+			if (!nextElement) {
+				const parent = lookUpForParentNavigation(selectedElement.parent).parentElement
+				if (parent) nextElement = findNextElement(parent, parent.selectedIndex, true)
+				console.log('> \t\t nextElement:', nextElement)
+			}
+		}
 		else { // If navigate down from child element than does not have navigation - choose parent
-			const parent = findElement(selectedNode.parent, Navigator.tree)
-			if (parent && parent.navigate && parent.navigate.up) nextElement = findNextElement(parent, selectedNodeIndex, true)
+			const { parentElement, iteration } = lookUpForParentNavigation(selectedElement.parent)
+			if (parentElement) nextElement = findNextElement(parentElement, iteration >= 0 ? selectedElementIndex : parentElement.selectedIndex, true)
 		}
 	}
 	else if (e.key === 'ArrowRight') {
-		if (selectedNode.navigate.right) {
-			if (selectedNode.navigate.loop)
-				nextElement = Navigator.getNextElement(selectedNode, selectedNode.navigate.loop)
-			else nextElement = findNextElement(selectedNode, 0)
-			console.log('> \t nextElement', nextElement)
-			// if (nextElement == null) {
-			// 	const parent = findElement(selectedNode.parent, Navigator.tree)
-			// 	nextElement = findNextElement(parent)
-			// }
+		if (selectedElement.navigate.right) {
+			nextElement = findNextElement(selectedElement, 0, false, selectedElement.navigate.loop)
 		}
 		//TODO: NAVIGATE RIGHT FROM PARENT
 	}
 	else if (e.key === 'ArrowLeft') {
-		if (selectedNode.navigate.left) {
-			nextElement = Navigator.getPrevElement(selectedNode, selectedNode.navigate.loop)
-			console.log('> \t nextElement', nextElement)
-			if (!nextElement) {
-				const parent = findElement(selectedNode.parent, Navigator.tree)
-				nextElement = findNextElement(parent, 0, true)
-			}
+		if (selectedElement.navigate.left) {
+			nextElement = Navigator.getPrevElement(selectedElement, selectedElement.navigate.loop)
 		}
 		//TODO: NAVIGATE LEFT FROM PARENT
 	}
+	
+	console.log("Process event: \n\t _selectedDom.id =", _selectedDom.id)
+	console.log("\t selectedElement name|parent:", selectedElement.name, selectedElement.parent, allowedNavigation)
+	console.log("\t nextElement:", nextElement)
+	console.log("\t Navigator.tree =", Navigator.tree)
 	
 	if (nextElement) {
 		const nextDomElement = document.getElementById(nextElement.name)
 		selectElement(_selectedDom != null ? _selectedDom : null, nextDomElement)
 		_selectedDom = nextDomElement
 	}
-	
-	console.log("Process event: ", _selectedDom.id, selectedNode, Navigator.tree)
 }
 
 Navigator.install = function(Vue, options) {
@@ -162,8 +194,6 @@ Navigator.install = function(Vue, options) {
 			console.log(element);
 			selectElement(_selectedDom != null ? _selectedDom : null, element)
 			_selectedDom = element;
-			_selectedVNode = vnode;
-			// console.log("selected", _selectedVNode, Navigator.tree);
 			// console.log('selected', vnode.data.directives.find(movie => movie.arg === 'navigate'))
 		},
 		unbind: (element, binding, vnode) => {}
