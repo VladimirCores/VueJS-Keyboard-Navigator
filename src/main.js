@@ -6,16 +6,24 @@ Vue.config.productionTip = false;
 
 Vue.use(Navigator);
 
-const emit = (up) => {
-  let e = new KeyboardEvent('keyup', {key: up ? 'ArrowUp':'ArrowDown'})
+const delay = time => new Promise(r => setTimeout(r, time))
+const emit = (event) => {
+  let e = new KeyboardEvent('keyup', {key: event})
   window.dispatchEvent(e)
 }
-
-// setTimeout(() => {
-//   emit(true)
-// }, 1000)
+/*
+* Cases:
+* 1. ['ArrowDown', 'ArrowRight', 'ArrowUp']
+* 2. ['ArrowDown', 'ArrowRight', 'ArrowLeft']
+* */
+setTimeout(() => {
+  emit('ArrowDown')
+  emit('ArrowRight')
+  emit('ArrowUp')
+  console.clear()
+  emit('ArrowDown')
+}, 100)
 
 new Vue({
   render: h => h(App),
-  // mounted: emit
 }).$mount("#app");

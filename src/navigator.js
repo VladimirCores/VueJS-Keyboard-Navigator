@@ -74,6 +74,7 @@ class Navigator {
 				parentNode.numChildren = parentNode.numChildren ? parentNode.numChildren + 1 : 1
 				if (!parentNode.children) parentNode.children = []
 				childNode.index = parentNode.children.length
+				childNode.inArray = true
 				parentNode.children.push(child)
 			} else {
 				childNode = findElement(child, Navigator.tree)
@@ -84,6 +85,7 @@ class Navigator {
 					delete Navigator.tree[child]
 				}
 				else childNode = { name: child, parent: parent, numChildren: 0, index: 0 }
+				childNode.inArray = true
 				parentNode[child] = childNode
 				parentNode.numChildren = 1
 				parentNode.children = [child]
@@ -106,7 +108,7 @@ function selectElement(prev, next) {
 
 function findNextElement (node, index, reverse, loop) {
 	let nextElement = reverse ? Navigator.getPrevElement(node, !!loop) : Navigator.getNextElement(node, !!loop)
-	if (nextElement && nextElement.numChildren > 0) {
+	while (nextElement && nextElement.numChildren > 0) {
 		console.log('> \t\tfindNextElement:', nextElement.name, nextElement.parent, nextElement.children)
 		const nextIndex = !isNaN(index) && index < nextElement.numChildren ? index : nextElement.numChildren - 1
 		nextElement.selectedIndex = nextIndex
@@ -118,7 +120,10 @@ function findNextElement (node, index, reverse, loop) {
 function lookUpForParentNavigation(parent, iteration = 0) {
 	let parentElement = findElement(parent, Navigator.tree)
 	console.log(`> \tlookUpForParentNavigation -> parent =`, parent, iteration, parentElement)
-	if (parentElement && parentElement.navigate && !parentElement.navigate.up) // Go to the next level up
+	if (parentElement
+		&& ((parentElement.navigate && !parentElement.navigate.up)
+			|| parentElement.inArray && parentElement.index === 0)
+		) // Go to the next level up
 		return lookUpForParentNavigation(parentElement.parent, ++iteration)
 	// console.log(`> \tlookUpForParentNavigation -> parentElement.name =`, parentElement.name, parentElement.navigate)
 	return { parentElement, iteration }
@@ -128,9 +133,25 @@ function lookDownForChildrenNavigation(parentElement) {
 	console.log(`> \t\tlookDownForChildrenNavigation -> parentElement =`, parentElement)
 	let child = parentElement
 	if (parentElement && parentElement.numChildren > 0) {
-		child = lookDownForChildrenNavigation(parentElement[parentElement.children[0]])
+		child = lookDownForChildrenNavigation(parentElement[parentElement.children[parentElement.selectedIndex]])
 	}
 	return child
+}
+
+function lookRightForParentNavigation(parent) {
+	let parentElement = findElement(parent, Navigator.tree)
+	console.log(`> \tlookRightForParentNavigation -> parent =`, parent, parentElement)
+	if (parentElement && parentElement.navigate && !parentElement.navigate.right) // Go to the next level up
+		return lookRightForParentNavigation(parentElement.parent)
+	return parentElement.parent ? parentElement : null
+}
+
+function lookLeftForParentNavigation(parent) {
+	const parentElement = findElement(parent, Navigator.tree)
+	console.log(`> \tlookLeftForParentNavigation -> parent =`, parent, parentElement.navigate)
+	if (parentElement && parentElement.navigate && !parentElement.navigate.left) // Go to the next level up
+		return lookLeftForParentNavigation(parentElement.parent)
+	return parentElement.parent ? parentElement : null // filter root
 }
 
 function handleKeyUp(e) {
@@ -146,16 +167,18 @@ function handleKeyUp(e) {
 		else { // If navigate down from child element than does not have navigation - choose parent
 			const parent = findElement(selectedElement.parent, Navigator.tree)
 			console.log(`> \t: parent =`, parent)
-			if (parent && parent.navigate && parent.navigate.down) nextElement = findNextElement(parent, selectedElementIndex)
+			if (parent && parent.navigate && parent.navigate.down)
+				nextElement = findNextElement(parent, selectedElementIndex)
 		}
 	}
 	else if (e.key === 'ArrowUp') {
 		if (allowedNavigation.up) {
 			nextElement = findNextElement(selectedElement, selectedElementIndex, true)
+			console.log('> \t\t nextElement up:', nextElement)
 			if (!nextElement) {
 				const parent = lookUpForParentNavigation(selectedElement.parent).parentElement
 				if (parent) nextElement = findNextElement(parent, parent.selectedIndex, true)
-				console.log('> \t\t nextElement:', nextElement)
+				console.log('> \t\t nextElement parent:', nextElement)
 			}
 		}
 		else { // If navigate down from child element than does not have navigation - choose parent
@@ -167,13 +190,19 @@ function handleKeyUp(e) {
 		if (selectedElement.navigate.right) {
 			nextElement = findNextElement(selectedElement, 0, false, selectedElement.navigate.loop)
 		}
-		//TODO: NAVIGATE RIGHT FROM PARENT
+		if (!nextElement) {
+			const parent = lookRightForParentNavigation(selectedElement.parent)
+			if (parent) nextElement = findNextElement(parent, parent.selectedIndex, false)
+		}
 	}
 	else if (e.key === 'ArrowLeft') {
 		if (selectedElement.navigate.left) {
 			nextElement = Navigator.getPrevElement(selectedElement, selectedElement.navigate.loop)
 		}
-		//TODO: NAVIGATE LEFT FROM PARENT
+		if (!nextElement) {
+			const parent = lookLeftForParentNavigation(selectedElement.parent)
+			if (parent) nextElement = findNextElement(parent, parent.selectedIndex, true)
+		}
 	}
 	
 	console.log("Process event: \n\t _selectedDom.id =", _selectedDom.id)

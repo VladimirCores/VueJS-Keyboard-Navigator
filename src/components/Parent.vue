@@ -1,11 +1,11 @@
 <template>
     <div class="parent">
         <div v-if="loop">
-            <Item v-focus:navigate.left.right.loop v-for="(item, index) in items" :key="index" :index="index"></Item>
+            <Item v-focus:navigate.left.right.loop v-for="(item, index) in blocks" :key="index" :index="index"></Item>
             <small>loop</small>
         </div>
         <div v-else>
-            <Item v-focus:navigate.left.right v-for="(item, index) in items" :key="index" :index="index"></Item>
+            <Item v-focus:navigate.left.right v-for="(item, index) in blocks" :key="index" :index="index"></Item>
         </div>
     </div>
 </template>
@@ -16,7 +16,7 @@ import Item from "./Item";
 export default {
     name: "Parent",
     props: {
-      children: Array,
+      blocks: Array,
     },
     computed: {
         loop: () => 0 //Math.random() > 0.5,

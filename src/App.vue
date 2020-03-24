@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <Item class="special" v-selected v-focus:navigate.down :index="111"/>
-    <Body v-focus:navigate.up :items="items"/>
+    <Body v-focus:navigate.up :items="items" :getBlocks="getRandomBlockAmount"/>
 <!--    <div class="body">-->
 <!--      <Block v-focus:navigate.up.right class="block"></Block>-->
 <!--      <div class="parents">-->
@@ -9,6 +9,7 @@
 <!--          v-focus:navigate.up.down.left-->
 <!--          v-for="(item, index) in items"-->
 <!--          :key="index"-->
+<!--          :blocks="getRandomBlockAmount()"-->
 <!--          :index="item"-->
 <!--        />-->
 <!--      </div>-->
@@ -28,8 +29,13 @@
     props: { children: Array },
     components: {Body, Parent, Block, Item },
     data: () => ({
-      items: [...Array(2).keys()]
+      items: [...Array(3).keys()]
     }),
+    methods: {
+      getRandomBlockAmount: () => {
+        return [...Array((Math.ceil(Math.random() * 3) + 1)).keys()]
+      }
+    },
     beforeCreate() {
       Navigator.init()
     }

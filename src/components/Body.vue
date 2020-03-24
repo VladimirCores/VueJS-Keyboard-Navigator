@@ -1,26 +1,29 @@
 <template>
     <div class="body">
         <Block v-focus:navigate.right class="block"></Block>
-        <div class="parents">
+        <Container v-focus:navigate.left class="parents">
             <Parent
-                v-focus:navigate.up.down.left
+                v-focus:navigate.up.down
                 v-for="(item, index) in items"
                 :key="index"
                 :index="item"
+                :blocks="getBlocks()"
             />
-        </div>
+        </Container>
     </div>
 </template>
 
 <script>
 import Block from "./Block";
 import Parent from "./Parent";
+import Container from "./Container"
 
 export default {
     name: "Body",
-    components: { Parent, Block },
+    components: {Container, Parent, Block },
     props: {
-        items: Array
+        items: Array,
+        getBlocks: Function
     },
 };
 </script>
