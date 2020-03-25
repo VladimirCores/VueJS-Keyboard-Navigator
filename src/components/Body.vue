@@ -1,7 +1,8 @@
 <template>
     <div class="body">
         <Block v-focus:navigate.right class="block"></Block>
-        <Container v-focus:navigate.left class="parents">
+        <Container v-focus:navigate.left.right class="parents">
+            <span><b>Container</b></span>
             <Parent
                 v-focus:navigate.up.down
                 v-for="(item, index) in items"
@@ -10,6 +11,8 @@
                 :blocks="getBlocks()"
             />
         </Container>
+        <Block v-focus:navigate.left.right class="block"></Block>
+        <Block v-focus:navigate.left class="block"></Block>
     </div>
 </template>
 
@@ -37,16 +40,18 @@ export default {
 .block {
     position: relative;
     padding: 0.5rem;
-    margin-right: 1rem;
     text-align: center;
     background-color: whitesmoke;
-    font-weight: bold;
     display: inline-block;
     vertical-align: top;
+}
+.block:last-child {
+    margin-left: 1rem;
 }
 .parents {
     position: relative;
     vertical-align:top;
+    margin: 0 1rem;
     display: inline-block;
 }
 </style>

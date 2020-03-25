@@ -18,10 +18,10 @@ const emit = (event) => {
 * */
 setTimeout(() => {
   emit('ArrowDown')
-  emit('ArrowRight')
-  emit('ArrowUp')
-  console.clear()
   emit('ArrowDown')
+  console.clear()
+  emit('ArrowRight')
+  // emit('ArrowLeft')
 }, 100)
 
 new Vue({

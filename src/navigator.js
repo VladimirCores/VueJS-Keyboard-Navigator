@@ -16,6 +16,19 @@ function findElement(name, currentNode, level = 0) {
 	}
 }
 
+class Element
+{
+	constructor(name, parent, numChildren, index) {
+		this.name = name
+		this.parent = parent
+		this.numChildren = numChildren
+		this.index = index
+		this.inArray = false
+		this.first = false
+		this.last = false
+	}
+}
+
 class Navigator {
 	static tree = {};
 	static init() {
@@ -59,43 +72,47 @@ class Navigator {
 	
 	static registerFocusElement(parent, child) {
 		if (parent) {
-			let parentNode = findElement(parent, Navigator.tree)
-			let childNode
-			if (parentNode) {
-				childNode = findElement(child, Navigator.tree)
-				if (childNode) {
+			let parentElement = findElement(parent, Navigator.tree)
+			let childElement
+			if (parentElement) {
+				childElement = findElement(child, Navigator.tree)
+				if (childElement) {
 					if (Navigator.tree[child]) delete Navigator.tree[child]
-					childNode.parent = parent
-					parentNode[child] = childNode
+					childElement.parent = parent
+					parentElement[child] = childElement
 				} else {
 					// console.log('\t\tnew child: '+ child, parent)
-					childNode = parentNode[child] = { name: child, parent: parent, numChildren: 0, index: parentNode.numChildren || 0 }
+					childElement = parentElement[child] = new Element(child, parent, 0, parentElement.numChildren || 0)
 				}
-				parentNode.numChildren = parentNode.numChildren ? parentNode.numChildren + 1 : 1
-				if (!parentNode.children) parentNode.children = []
-				childNode.index = parentNode.children.length
-				childNode.inArray = true
-				parentNode.children.push(child)
+				parentElement.numChildren = parentElement.numChildren ? parentElement.numChildren + 1 : 1
+				if (!parentElement.children) parentElement.children = []
+				childElement.index = parentElement.children.length
+				childElement.inArray = true
+				childElement.last = true
+				parentElement[parentElement.children[parentElement.children.length - 1]].last = false
+				parentElement.children.push(child)
 			} else {
-				childNode = findElement(child, Navigator.tree)
-				parentNode = Navigator.tree[parent] || (Navigator.tree[parent] = {})
-				if (childNode && Navigator.tree[child]) {
-					childNode.parent = parent
-					childNode.index = 0
+				childElement = findElement(child, Navigator.tree)
+				parentElement = Navigator.tree[parent] || (Navigator.tree[parent] = {})
+				if (childElement && Navigator.tree[child]) {
+					childElement.parent = parent
+					childElement.index = 0
 					delete Navigator.tree[child]
 				}
-				else childNode = { name: child, parent: parent, numChildren: 0, index: 0 }
-				childNode.inArray = true
-				parentNode[child] = childNode
-				parentNode.numChildren = 1
-				parentNode.children = [child]
-				parentNode.name = parent
-				parentNode.selectedIndex = 0
+				else childElement = new Element(child, parent, 0, 0)
+				childElement.inArray = true
+				childElement.last = true
+				childElement.first = true
+				parentElement[child] = childElement
+				parentElement.numChildren = 1
+				parentElement.children = [child]
+				parentElement.name = parent
+				parentElement.selectedIndex = 0
 				// console.log("\t\tno parent: " + parent, child, parentNode)
 			}
-			return childNode
+			return childElement
 		} else if (!Navigator.tree[child]) {
-			Navigator.tree[child] = { name: child, parent: 'root', numChildren: 0, index: 0 }
+			Navigator.tree[child] = new Element(child, 'root', 0, 0)
 			return Navigator.tree[child]
 		}
 	}
@@ -107,14 +124,17 @@ function selectElement(prev, next) {
 }
 
 function findNextElement (node, index, reverse, loop) {
-	let nextElement = reverse ? Navigator.getPrevElement(node, !!loop) : Navigator.getNextElement(node, !!loop)
-	while (nextElement && nextElement.numChildren > 0) {
-		console.log('> \t\tfindNextElement:', nextElement.name, nextElement.parent, nextElement.children)
-		const nextIndex = !isNaN(index) && index < nextElement.numChildren ? index : nextElement.numChildren - 1
-		nextElement.selectedIndex = nextIndex
-		nextElement = nextElement[nextElement.children[nextIndex]]
+	let nextParentElement = reverse ? Navigator.getPrevElement(node, !!loop) : Navigator.getNextElement(node, !!loop)
+	while (nextParentElement && nextParentElement.numChildren > 0) {
+		console.log('> \t\tfindNextElement:', nextParentElement.name, nextParentElement.parent, index, nextParentElement.selectedIndex)
+		if (!isNaN(index) && index < nextParentElement.numChildren) {
+			nextParentElement.selectedIndex = index
+		} else {
+			nextParentElement.selectedIndex = nextParentElement.numChildren - 1
+		}
+		nextParentElement = nextParentElement[nextParentElement.children[nextParentElement.selectedIndex]]
 	}
-	return nextElement
+	return nextParentElement
 }
 
 function lookUpForParentNavigation(parent, iteration = 0) {
@@ -122,7 +142,7 @@ function lookUpForParentNavigation(parent, iteration = 0) {
 	console.log(`> \tlookUpForParentNavigation -> parent =`, parent, iteration, parentElement)
 	if (parentElement
 		&& ((parentElement.navigate && !parentElement.navigate.up)
-			|| parentElement.inArray && parentElement.index === 0)
+			|| parentElement.inArray && parentElement.first)
 		) // Go to the next level up
 		return lookUpForParentNavigation(parentElement.parent, ++iteration)
 	// console.log(`> \tlookUpForParentNavigation -> parentElement.name =`, parentElement.name, parentElement.navigate)
@@ -164,26 +184,27 @@ function handleKeyUp(e) {
 		if (allowedNavigation.down) {
 			nextElement = lookDownForChildrenNavigation(findNextElement(selectedElement, selectedElementIndex))
 		}
-		else { // If navigate down from child element than does not have navigation - choose parent
-			const parent = findElement(selectedElement.parent, Navigator.tree)
-			console.log(`> \t: parent =`, parent)
-			if (parent && parent.navigate && parent.navigate.down)
-				nextElement = findNextElement(parent, selectedElementIndex)
+		if (!nextElement)	{
+			let parent = selectedElement;
+			do {
+				parent = findElement(parent.parent, Navigator.tree)
+				console.log(`> \t\tparent =`, parent)
+			} while(parent
+				&& ((parent.navigate && !parent.navigate.down)
+					|| parent.inArray && parent.last))
+					if (parent && parent.parent)
+						nextElement = findNextElement(parent, 0)
 		}
 	}
 	else if (e.key === 'ArrowUp') {
 		if (allowedNavigation.up) {
 			nextElement = findNextElement(selectedElement, selectedElementIndex, true)
 			console.log('> \t\t nextElement up:', nextElement)
-			if (!nextElement) {
-				const parent = lookUpForParentNavigation(selectedElement.parent).parentElement
-				if (parent) nextElement = findNextElement(parent, parent.selectedIndex, true)
-				console.log('> \t\t nextElement parent:', nextElement)
-			}
 		}
-		else { // If navigate down from child element than does not have navigation - choose parent
-			const { parentElement, iteration } = lookUpForParentNavigation(selectedElement.parent)
-			if (parentElement) nextElement = findNextElement(parentElement, iteration >= 0 ? selectedElementIndex : parentElement.selectedIndex, true)
+		if (!nextElement) {
+			const parent = lookUpForParentNavigation(selectedElement.parent).parentElement
+			if (parent) nextElement = findNextElement(parent, selectedElementIndex, true)
+			console.log('> \t\t nextElement parent:', nextElement)
 		}
 	}
 	else if (e.key === 'ArrowRight') {
@@ -192,16 +213,16 @@ function handleKeyUp(e) {
 		}
 		if (!nextElement) {
 			const parent = lookRightForParentNavigation(selectedElement.parent)
-			if (parent) nextElement = findNextElement(parent, parent.selectedIndex, false)
+			if (parent) nextElement = findNextElement(parent, 0, false)
 		}
 	}
 	else if (e.key === 'ArrowLeft') {
 		if (selectedElement.navigate.left) {
-			nextElement = Navigator.getPrevElement(selectedElement, selectedElement.navigate.loop)
+			nextElement = findNextElement(selectedElement, 0, true, selectedElement.navigate.loop)
 		}
 		if (!nextElement) {
 			const parent = lookLeftForParentNavigation(selectedElement.parent)
-			if (parent) nextElement = findNextElement(parent, parent.selectedIndex, true)
+			if (parent) nextElement = findNextElement(parent, 0, true)
 		}
 	}
 	

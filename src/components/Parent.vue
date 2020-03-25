@@ -29,17 +29,18 @@ export default {
 </script>
 
 <style scoped>
-    .parent {
-        width: 100%;
-        display: block;
-        padding: 0.5rem;
-        margin-bottom: 0.5rem;
-        background-color: whitesmoke;
-    }
-    .parent * :not(:last-child) {
-        margin-right: 1px;
-    }
-    small {
-        margin-left: 0.5rem;
-    }
+.parent {
+    width: 100%;
+    display: block;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    margin-bottom: 0.5rem;
+    background-color: whitesmoke;
+}
+.parent * :not(:last-child) {
+    margin-right: 1px;
+}
+small {
+    margin-left: 0.5rem;
+}
 </style>

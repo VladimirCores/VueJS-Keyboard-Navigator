@@ -1,19 +1,19 @@
 <template>
   <div id="app">
     <Item class="special" v-selected v-focus:navigate.down :index="111"/>
-    <Body v-focus:navigate.up :items="items" :getBlocks="getRandomBlockAmount"/>
-<!--    <div class="body">-->
-<!--      <Block v-focus:navigate.up.right class="block"></Block>-->
-<!--      <div class="parents">-->
-<!--        <Parent-->
-<!--          v-focus:navigate.up.down.left-->
-<!--          v-for="(item, index) in items"-->
-<!--          :key="index"-->
-<!--          :blocks="getRandomBlockAmount()"-->
-<!--          :index="item"-->
-<!--        />-->
-<!--      </div>-->
-<!--    </div>-->
+    <Body v-focus:navigate.up.down :items="items" :getBlocks="getRandomBlockAmount"/>
+    <div class="body">
+      <Block v-focus:navigate.up.right class="block"></Block>
+      <Container v-focus:navigate.left.right class="parents">
+        <Parent
+          v-focus:navigate.up.down
+          v-for="(item, index) in items"
+          :key="index"
+          :blocks="getRandomBlockAmount()"
+          :index="item"
+        />
+      </Container>
+    </div>
   </div>
 </template>
 
@@ -23,17 +23,18 @@
   import Item from "./components/Item";
   import Navigator from "./navigator";
   import Body from "./components/Body"
+  import Container from "./components/Container"
 
   export default {
     name: "App",
     props: { children: Array },
-    components: {Body, Parent, Block, Item },
+    components: {Container, Body, Parent, Block, Item },
     data: () => ({
-      items: [...Array(3).keys()]
+      items: [...Array(5).keys()]
     }),
     methods: {
       getRandomBlockAmount: () => {
-        return [...Array((Math.ceil(Math.random() * 3) + 1)).keys()]
+        return [...Array((Math.ceil(Math.random() * 10) + 1)).keys()]
       }
     },
     beforeCreate() {
