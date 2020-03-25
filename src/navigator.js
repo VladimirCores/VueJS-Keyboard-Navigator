@@ -182,18 +182,18 @@ function handleKeyUp(e) {
 	console.log(`> ${e.key}: selectedNode.navigate =`, allowedNavigation)
 	if (e.key === 'ArrowDown') {
 		if (allowedNavigation.down) {
-			nextElement = lookDownForChildrenNavigation(findNextElement(selectedElement, selectedElementIndex))
+			nextElement = findNextElement(selectedElement, selectedElementIndex)
 		}
 		if (!nextElement)	{
 			let parent = selectedElement;
+			let interation = 0
 			do {
 				parent = findElement(parent.parent, Navigator.tree)
+				interation++
 				console.log(`> \t\tparent =`, parent)
-			} while(parent
-				&& ((parent.navigate && !parent.navigate.down)
-					|| parent.inArray && parent.last))
-					if (parent && parent.parent)
-						nextElement = findNextElement(parent, 0)
+			} while(parent && ((parent.navigate && !parent.navigate.down) || parent.inArray && parent.last))
+				if (parent && parent.parent)
+					nextElement = findNextElement(parent, interation > 1 ? 0 : parent.selectedIndex)
 		}
 	}
 	else if (e.key === 'ArrowUp') {
