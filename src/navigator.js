@@ -1,16 +1,17 @@
 let _selectedDom;
 
-function findElement(id, currentNode, level = 0) {
-	// console.log('findNode > id =', id, currentNode)
-	if (!currentNode || level >= 10) {
+function findElement(id, currentNode) { // level can be removed
+	if (!currentNode) {
 		return null;
 	} else if (currentNode[id]) return currentNode[id];
 	else {
 		for (const key in currentNode) {
-			// console.log('findNode > key = ', key)
 			if (key === id) return currentNode[key];
-			const res = findElement(id, currentNode[key], level + 1);
-			if (res) return res;
+			else if (currentNode[key] instanceof Element) {
+				// console.log('findNode > key = ', level, id, key)
+				const res = findElement(id, currentNode[key]);
+				if (res) return res;
+			}
 		}
 		return null;
 	}
@@ -33,8 +34,8 @@ class Navigator {
 	static tree = {};
 	static idtoelement = new Map();
 	static init() {
-		window.removeEventListener("keyup", handleKeyUp2);
-		window.addEventListener("keyup", handleKeyUp2);
+		window.removeEventListener("keyup", handleKeyUp);
+		window.addEventListener("keyup", handleKeyUp);
 		Navigator.tree = {};
 	}
 	
@@ -113,7 +114,6 @@ const findNavigationOwnerUp = (from, direction, criteria) => {
 	}
 	return navigationOwner
 }
-
 const findLastSelectedChild = (from, selectedIndex) => {
 	let next = from
 	let iterations = 0, index = selectedIndex, childIndex = 0
@@ -128,7 +128,6 @@ const findLastSelectedChild = (from, selectedIndex) => {
 	}
 	return { next, index, childIndex }
 }
-
 const findNextElementWithCriterias = (element, direction, parentSelectionCriteria, nextIndexCriteria) => {
 	let navigationOwner = findNavigationOwnerUp(element, direction, parentSelectionCriteria)
 	let parentElement = navigationOwner ? Navigator.findElementByID(navigationOwner.pid) : null
@@ -162,38 +161,47 @@ const findNextElementWithCriterias = (element, direction, parentSelectionCriteri
 	return null
 }
 
-function handleKeyUp2(e) {
-	if(e.key === 'ç' || e.key === 'Alt') {
-		console.clear()
-		return
+class NavigationOptions {
+	constructor(direction, parentSelectionCriteria, nextIndexCriteria) {
+		this.direction = direction
+		this.parentSelectionCriteria = parentSelectionCriteria
+		this.nextIndexCriteria = nextIndexCriteria
 	}
-	
-	const selectedElement = Navigator.findElementByID(_selectedDom.id)
-	let nextElement = null
-	if (e.key === 'ArrowDown') {
-		nextElement = findNextElementWithCriterias(selectedElement,
-			'down', (item) => item.inArray && item.last, (index) => index + 1)
+}
+
+const NAVIGATIONS = {
+	'ArrowDown': new NavigationOptions(
+		'down', (item) => item.inArray && item.last, (index) => index + 1
+	),
+	'ArrowUp': new NavigationOptions(
+		'up', (item) => item.inArray && item.first, (index) => index - 1
+	),
+	'ArrowRight': new NavigationOptions(
+		'right', (item) => item.inArray && item.last, (index) => index + 1
+	),
+	'ArrowLeft': new NavigationOptions(
+		'left', (item) => item.inArray && item.first, (index) => index - 1
+	)
+}
+
+function handleKeyUp(e) {
+	let navigation = NAVIGATIONS[e.key]
+	if (navigation) {
+		let nextElement = findNextElementWithCriterias(
+			Navigator.findElementByID(_selectedDom.id),
+			navigation.direction,
+			navigation.parentSelectionCriteria,
+			navigation.nextIndexCriteria
+		)
+		
+		if (nextElement) {
+			const nextDomElement = document.getElementById(nextElement.id)
+			selectElement(_selectedDom != null ? _selectedDom : null, nextDomElement)
+			_selectedDom = nextDomElement
+		}
+		console.log(e.key,"> nextElement =", nextElement)
+		console.log(e.key,"> Navigator.tree =", Navigator.tree)
 	}
-	else if (e.key === 'ArrowUp') {
-		nextElement = findNextElementWithCriterias(selectedElement,
-			'up', (item) => item.inArray && item.first, (index) => index - 1)
-	}
-	else if (e.key === 'ArrowRight') {
-		nextElement = findNextElementWithCriterias(selectedElement,
-			'right', (item) => item.inArray && item.last, (index) => index + 1)
-	}
-	else if (e.key === 'ArrowLeft') {
-		nextElement = findNextElementWithCriterias(selectedElement,
-			'left', (item) => item.inArray && item.first, (index) => index - 1)
-	}
-	
-	if (nextElement) {
-		const nextDomElement = document.getElementById(nextElement.id)
-		selectElement(_selectedDom != null ? _selectedDom : null, nextDomElement)
-		_selectedDom = nextDomElement
-	}
-	console.log(e.key,"> nextElement =", nextElement)
-	console.log(e.key,"> Navigator.tree =", Navigator.tree)
 }
 
 Navigator.install = function(Vue, options) {

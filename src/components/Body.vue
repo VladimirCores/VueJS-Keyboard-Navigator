@@ -11,8 +11,8 @@
                 :blocks="getBlocks()"
             />
         </Container>
-<!--        <Block v-focus:navigate.left.right class="block"></Block>-->
-<!--        <Block v-focus:navigate.left class="block"></Block>-->
+        <Block v-focus:navigate.left.right class="block"></Block>
+        <Block v-focus:navigate.left class="block"></Block>
     </div>
 </template>
 

@@ -30,11 +30,11 @@
     props: { children: Array },
     components: {Container, Body, Parent, Block, Item },
     data: () => ({
-      items: [...Array(3).keys()]
+      items: [...Array(8).keys()]
     }),
     methods: {
       getRandomBlockAmount: () => {
-        return [...Array((Math.ceil(Math.random() * 5) + 1)).keys()]
+        return [...Array((Math.ceil(Math.random() * 8) + 1)).keys()]
       }
     },
     beforeCreate() {

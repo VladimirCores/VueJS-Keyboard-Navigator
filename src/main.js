@@ -16,17 +16,18 @@ const emit = (event) => {
 * 1. ['ArrowDown', 'ArrowRight', 'ArrowUp']
 * 2. ['ArrowDown', 'ArrowRight', 'ArrowLeft']
 * */
-setTimeout(() => {
-  emit('ArrowDown')
-  emit('ArrowDown')
-  emit('ArrowDown')
-  emit('ArrowDown')
-  emit('ArrowDown')
-  console.clear()
-  emit('ArrowRight')
-  // emit('ArrowLeft')
-}, 100)
 
 new Vue({
   render: h => h(App),
+  mounted() {
+    emit('ArrowDown')
+    emit('ArrowRight')
+    emit('ArrowRight')
+    emit('ArrowUp')
+    emit('ArrowDown')
+    emit('ArrowLeft')
+    emit('ArrowLeft')
+    emit('ArrowUp')
+    console.clear()
+  }
 }).$mount("#app");
