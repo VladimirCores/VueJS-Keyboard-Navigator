@@ -1,17 +1,15 @@
 let _selectedDom;
 
-function findElement(id, currentNode) { // level can be removed
-	if (!currentNode) {
+function findElement(id, currentElement) { // level can be removed
+	if (!currentElement) {
 		return null;
-	} else if (currentNode[id]) return currentNode[id];
+	} else if (currentElement.hasOwnProperty(id)) return currentElement[id];
 	else {
-		for (const key in currentNode) {
-			if (key === id) return currentNode[key];
-			else if (currentNode[key] instanceof Element) {
-				// console.log('findNode > key = ', level, id, key)
-				const res = findElement(id, currentNode[key]);
-				if (res) return res;
-			}
+		for (const key in currentElement) {
+			if (key === id)
+				return currentElement[key];
+			else if (currentElement[key] instanceof Element)
+				return findElement(id, currentElement[key]);
 		}
 		return null;
 	}
