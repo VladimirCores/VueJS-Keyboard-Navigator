@@ -11,7 +11,7 @@ export default {
     name: "Block",
 	components: { Item },
 	data: () => ({
-		items: [...Array((Math.ceil(Math.random() * 8) + 3)).keys()]
+		items: [...Array((Math.ceil(Math.random() * 2) + 4)).keys()]
 	})
 };
 </script>

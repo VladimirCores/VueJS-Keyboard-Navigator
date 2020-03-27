@@ -1,18 +1,18 @@
 <template>
     <div class="body">
-        <Block v-focus:navigate.right class="block"></Block>
+        <Block v-focus:navigate.right.keepid class="block"></Block>
         <Container v-focus:navigate.left.right class="parents">
             <span><b>Container</b></span>
             <Parent
-                v-focus:navigate.up.down
+                v-focus:navigate.up.down.keepid
                 v-for="(item, index) in items"
                 :key="index"
                 :index="item"
                 :blocks="getBlocks()"
             />
         </Container>
-        <Block v-focus:navigate.left.right class="block"></Block>
-        <Block v-focus:navigate.left class="block"></Block>
+<!--        <Block v-focus:navigate.left.right class="block"></Block>-->
+<!--        <Block v-focus:navigate.left class="block"></Block>-->
     </div>
 </template>
 

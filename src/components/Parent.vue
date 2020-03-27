@@ -1,10 +1,11 @@
 <template>
     <div class="parent">
-        <div v-if="loop">
+        <span class="index">{{$vnode.key}}</span>
+        <div class="items" v-if="loop">
             <Item v-focus:navigate.left.right.loop v-for="(item, index) in blocks" :key="index" :index="index"></Item>
             <small>loop</small>
         </div>
-        <div v-else>
+        <div class="items" v-else>
             <Item v-focus:navigate.left.right v-for="(item, index) in blocks" :key="index" :index="index"></Item>
         </div>
     </div>
@@ -40,6 +41,17 @@ export default {
 .parent * :not(:last-child) {
     margin-right: 1px;
 }
+
+.parent .index {
+    padding: 0.25rem 0.5rem;
+    margin-right: 0.5rem;
+    color: black;
+}
+
+.parent .items {
+    display: inline-block;
+}
+
 small {
     margin-left: 0.5rem;
 }

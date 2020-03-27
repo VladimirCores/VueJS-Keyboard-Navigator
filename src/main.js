@@ -19,6 +19,9 @@ const emit = (event) => {
 setTimeout(() => {
   emit('ArrowDown')
   emit('ArrowDown')
+  emit('ArrowDown')
+  emit('ArrowDown')
+  emit('ArrowDown')
   console.clear()
   emit('ArrowRight')
   // emit('ArrowLeft')
