@@ -1,24 +1,11 @@
-# navigation
+# Keyboard Navigator
 
 ## Project setup
+1. Install `vue-cli` if you don't have it:
 ```
-npm install
+npm install -g @vue/cli
 ```
-
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+2. Run `vue ui` in the console
+3. Import folder to the **Vue Project Manager**
+4. Run task `serve`
+5. Open http://localhost:8080/
