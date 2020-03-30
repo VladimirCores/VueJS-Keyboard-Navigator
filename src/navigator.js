@@ -50,6 +50,17 @@ class Navigator {
 		return element
 	}
 	
+	static findFirstElement () {
+		const root = Navigator.tree
+		const firstElementName = Object.keys(root)
+		let result = root[firstElementName]
+		while (result.numChildren > 0) {
+			result = result[result.children[0]]
+			// console.log('> findFirstElement -> result:', result)
+		}
+		return result
+	}
+	
 	static registerFocusElement (parent, child) {
 		if (parent) {
 			let parentElement = findElement(parent, Navigator.tree)
@@ -107,9 +118,8 @@ function selectElement (prev, next) {
 
 const findNavigationOwnerUp = (from, direction, criteria) => {
 	let navigationOwner = from
-	while (navigationOwner && navigationOwner.navigate
-	&& (!navigationOwner.navigate[direction]
-		|| (criteria && criteria(navigationOwner)))) {
+	while (navigationOwner && navigationOwner.navigate &&
+	(!navigationOwner.navigate[direction] || criteria(navigationOwner))) {
 		navigationOwner = Navigator.findElementByID(navigationOwner.pid)
 		console.log('\t\tfindNavigationOwner:', navigationOwner)
 	}
@@ -117,47 +127,48 @@ const findNavigationOwnerUp = (from, direction, criteria) => {
 }
 const findLastSelectedChild = (from, selectedIndex) => {
 	let next = from
-	let iterations = 0, index = selectedIndex, childIndex = 0
+	let iterations = 0
+	let index = selectedIndex
+	let childIndex = 0
 	while (next && next.numChildren > 0) {
 		iterations++
-		let children = next.children
 		// This part needed only to set same selectedIndex when "keepid" exists on navigation owner
-		childIndex = iterations === 1 ?
-			(index = selectedIndex < children.length ? selectedIndex : children.length - 1)
+		childIndex = iterations === 1
+			? (index = selectedIndex < next.numChildren
+				? selectedIndex : next.numChildren - 1)
 			: next.selectedIndex
-		next = next[children[childIndex]]
+		next = next[next.children[childIndex]]
 	}
 	return {
 		next,
 		index,
-		childIndex,
+		childIndex
 	}
 }
-const findNextElementWithCriterias = (element, direction, parentSelectionCriteria, nextIndexCriteria) => {
-	let navigationOwner = findNavigationOwnerUp(element, direction, parentSelectionCriteria)
-	let parentElement = navigationOwner ? Navigator.findElementByID(navigationOwner.pid) : null
-	console.log('\tfindNextElementWithCriterias: parentElement =', parentElement)
+const findNextElementWithRules = (element, direction, parentSelectionRule, nextIndexRule) => {
+	const navigationOwner = findNavigationOwnerUp(element, direction, parentSelectionRule)
+	const parentElement = navigationOwner ? Navigator.findElementByID(navigationOwner.pid) : null
+	// console.log('\tfindNextElementWithRule: parentElement =', parentElement)
 	if (parentElement) {
-		let children = parentElement.children
-		let parentSelectedIndex = parentElement.selectedIndex
-		let parentNextChildIndex = nextIndexCriteria(parentSelectedIndex)
-		console.log('\t\t| parent ChildIndex =', element.index)
-		console.log('\t\t| parent SelectedIndex =', parentSelectedIndex)
-		console.log('\t\t| parent NextChildIndex =', parentNextChildIndex)
-		if (parentNextChildIndex > parentSelectedIndex ?
-			parentNextChildIndex < children.length :
-			parentNextChildIndex >= 0) {
-			let keepid = navigationOwner.navigate.keepid // use same selected index for first next parent child
-			let nextParentElement = parentElement[children[parentNextChildIndex]]
-			let firstSelectedChildIndex = keepid ? navigationOwner.selectedIndex : nextParentElement.selectedIndex
-			let { next, index, childIndex } = findLastSelectedChild(nextParentElement, firstSelectedChildIndex)
-			console.log('\t\t| navigationOwner keepid =', keepid)
+		const children = parentElement.children
+		const parentSelectedIndex = parentElement.selectedIndex
+		const parentNextChildIndex = nextIndexRule(parentSelectedIndex)
+		// console.log('\t\t| parent ChildIndex | SelectedIndex =', element.index)
+		// console.log('\t\t| parent SelectedIndex =', parentSelectedIndex)
+		// console.log('\t\t| parent NextChildIndex =', parentNextChildIndex)
+		if (parentNextChildIndex > parentSelectedIndex
+			? parentNextChildIndex < children.length
+			: parentNextChildIndex >= 0) {
+			const keepid = navigationOwner.navigate.keepid // use same selected index for first next parent child
+			const nextParentElement = parentElement[children[parentNextChildIndex]]
+			const firstSelectedChildIndex = keepid ? navigationOwner.selectedIndex : nextParentElement.selectedIndex
+			const { next, index } = findLastSelectedChild(nextParentElement, firstSelectedChildIndex)
+			// console.log('\t\t| navigationOwner keepid =', keepid)
 			if (next) {
 				nextParentElement.selectedIndex = index
 				parentElement.selectedIndex = parentNextChildIndex
-				console.log('\t\t| next parent SelectedIndex =', nextParentElement.index)
-				console.log('\t\t| next parent ChildIndex =', nextParentElement.selectedIndex)
-				console.log('\t\t| selected child index =', childIndex)
+				// console.log('\t\t| next parent SelectedIndex =', nextParentElement.index)
+				// console.log('\t\t| next parent ChildIndex =', nextParentElement.selectedIndex)
 				return next
 			}
 		}
@@ -166,41 +177,33 @@ const findNextElementWithCriterias = (element, direction, parentSelectionCriteri
 }
 
 class NavigationOptions {
-	constructor (direction, parentSelectionCriteria, nextIndexCriteria) {
+	constructor (direction, parentSelectionRule, nextIndexRule) {
 		this.direction = direction
-		this.parentSelectionCriteria = parentSelectionCriteria
-		this.nextIndexCriteria = nextIndexCriteria
+		this.parentSelectionRule = parentSelectionRule
+		this.nextIndexRule = nextIndexRule
 	}
 }
 
 const NAVIGATIONS = {
-	ArrowDown: new NavigationOptions(
-		'down', (item) => item.inArray && item.last, (index) => index + 1,
-	),
-	ArrowUp: new NavigationOptions(
-		'up', (item) => item.inArray && item.first, (index) => index - 1,
-	),
-	ArrowRight: new NavigationOptions(
-		'right', (item) => item.inArray && item.last, (index) => index + 1,
-	),
-	ArrowLeft: new NavigationOptions(
-		'left', (item) => item.inArray && item.first, (index) => index - 1,
-	),
+	ArrowDown: new NavigationOptions('down', (elm) => elm.inArray && elm.last, (idx) => idx + 1),
+	ArrowUp: new NavigationOptions('up', (elm) => elm.inArray && elm.first, (idx) => idx - 1),
+	ArrowRight: new NavigationOptions('right', (elm) => elm.inArray && elm.last, (idx) => idx + 1),
+	ArrowLeft: new NavigationOptions('left', (elm) => elm.inArray && elm.first, (idx) => idx - 1)
 }
 
 function handleKeyUp (e) {
 	const navigation = NAVIGATIONS[e.key]
 	if (navigation) {
-		const nextElement = findNextElementWithCriterias(
+		const nextElement = _selectedDom ? findNextElementWithRules(
 			Navigator.findElementByID(_selectedDom.id),
 			navigation.direction,
-			navigation.parentSelectionCriteria,
-			navigation.nextIndexCriteria,
-		)
+			navigation.parentSelectionRule,
+			navigation.nextIndexRule
+		) : Navigator.findFirstElement()
 		
 		if (nextElement) {
 			const nextDomElement = document.getElementById(nextElement.id)
-			selectElement(_selectedDom != null ? _selectedDom : null, nextDomElement)
+			selectElement(_selectedDom, nextDomElement)
 			_selectedDom = nextDomElement
 		}
 		console.log(e.key, '> nextElement =', nextElement)
@@ -209,15 +212,6 @@ function handleKeyUp (e) {
 }
 
 Navigator.install = function (Vue, options) {
-	Vue.directive('selected', {
-		bind: (element, binding, vnode) => {
-			selectElement(_selectedDom != null ? _selectedDom : null, element)
-			_selectedDom = element
-		},
-		unbind: (element, binding, vnode) => {
-		}
-	})
-	
 	Vue.directive('focus', {
 		// directive lifecycle
 		bind: (element, binding, vnode) => {
@@ -226,9 +220,17 @@ Navigator.install = function (Vue, options) {
 			const componentNameId = that.$options.name + that._uid
 			const navigate = vnode.data.directives.find(dir => dir.arg === 'navigate')
 			element.id = componentNameId
-			// console.log("> mounter -> element: ", componentNameId, componentParentId)
+			// console.log('> mounter -> element: ', componentNameId, componentParentId)
 			const item = Navigator.registerFocusElement(componentParentId, componentNameId)
 			item.navigate = navigate ? navigate.modifiers : {}
+		},
+		unbind: (element, binding, vnode) => {
+		}
+	})
+	Vue.directive('selected', {
+		bind: (element, binding, vnode) => {
+			selectElement(_selectedDom != null ? _selectedDom : null, element)
+			_selectedDom = element
 		},
 		unbind: (element, binding, vnode) => {
 		}
