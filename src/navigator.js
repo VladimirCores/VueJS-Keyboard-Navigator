@@ -1,4 +1,5 @@
 let _selectedDom
+let _elementsCount
 
 function findElement (id, currentElement) { // level can be removed
 	if (!currentElement) {
@@ -30,33 +31,40 @@ class Element {
 }
 
 class Navigator {
-	static tree = {}
-	static idtoelement = new Map()
+	static EVENTS = {
+		SELECTED: 'selected',
+		UNSELECTED: 'unselected',
+	}
+	
+	static tree
+	static idToElement
 	
 	static init () {
 		window.removeEventListener('keyup', handleKeyUp)
 		window.addEventListener('keyup', handleKeyUp)
+		Navigator.idToElement = new Map()
 		Navigator.tree = {}
+		_elementsCount = 0
+		_selectedDom = null
 	}
 	
 	static findElementByID (id) {
 		let element
-		if (Navigator.idtoelement.has(id)) {
-			element = Navigator.idtoelement.get(id)
+		if (Navigator.idToElement.has(id)) {
+			element = Navigator.idToElement.get(id)
 		} else {
 			element = findElement(id, Navigator.tree)
-			Navigator.idtoelement.set(id, element)
+			Navigator.idToElement.set(id, element)
 		}
 		return element
 	}
 	
 	static findFirstElement () {
-		const root = Navigator.tree
-		const firstElementName = Object.keys(root)
-		let result = root[firstElementName]
+		const firstElementName = Object.keys(Navigator.tree)
+		let result = Navigator.tree[firstElementName]
 		while (result.numChildren > 0) {
+			console.log('> findFirstElement -> result:', result)
 			result = result[result.children[0]]
-			// console.log('> findFirstElement -> result:', result)
 		}
 		return result
 	}
@@ -102,7 +110,7 @@ class Navigator {
 				parentElement.selectedIndex = 0
 				// console.log("\t\tno parent: " + parent, child, parentNode)
 			}
-			Navigator.idtoelement.set(child, childElement)
+			Navigator.idToElement.set(child, childElement)
 			return childElement
 		} else if (!Navigator.tree[child]) {
 			Navigator.tree[child] = new Element(child, 'root', 0, 0)
@@ -111,9 +119,8 @@ class Navigator {
 	}
 }
 
-function selectElement (prev, next) {
-	if (prev != null) prev.classList.remove('selected')
-	next.classList.add('selected')
+function focusElement (next) {
+	next.focus({ preventScroll: false })
 }
 
 const findNavigationOwnerUp = (from, direction, criteria) => {
@@ -125,6 +132,7 @@ const findNavigationOwnerUp = (from, direction, criteria) => {
 	}
 	return navigationOwner
 }
+
 const findLastSelectedChild = (from, selectedIndex) => {
 	let next = from
 	let iterations = 0
@@ -142,7 +150,7 @@ const findLastSelectedChild = (from, selectedIndex) => {
 	return {
 		next,
 		index,
-		childIndex
+		childIndex,
 	}
 }
 const findNextElementWithRules = (element, direction, parentSelectionRule, nextIndexRule) => {
@@ -185,10 +193,10 @@ class NavigationOptions {
 }
 
 const NAVIGATIONS = {
-	ArrowDown: new NavigationOptions('down', (elm) => elm.inArray && elm.last, (idx) => idx + 1),
-	ArrowUp: new NavigationOptions('up', (elm) => elm.inArray && elm.first, (idx) => idx - 1),
-	ArrowRight: new NavigationOptions('right', (elm) => elm.inArray && elm.last, (idx) => idx + 1),
-	ArrowLeft: new NavigationOptions('left', (elm) => elm.inArray && elm.first, (idx) => idx - 1)
+	ArrowDown: new NavigationOptions('down', (item) => item.inArray && item.last, (index) => index + 1),
+	ArrowUp: new NavigationOptions('up', (item) => item.inArray && item.first, (index) => index - 1),
+	ArrowRight: new NavigationOptions('right', (item) => item.inArray && item.last, (index) => index + 1),
+	ArrowLeft: new NavigationOptions('left', (item) => item.inArray && item.first, (index) => index - 1),
 }
 
 function handleKeyUp (e) {
@@ -198,16 +206,17 @@ function handleKeyUp (e) {
 			Navigator.findElementByID(_selectedDom.id),
 			navigation.direction,
 			navigation.parentSelectionRule,
-			navigation.nextIndexRule
+			navigation.nextIndexRule,
 		) : Navigator.findFirstElement()
 		
 		if (nextElement) {
-			const nextDomElement = document.getElementById(nextElement.id)
-			selectElement(_selectedDom, nextDomElement)
-			_selectedDom = nextDomElement
+			const nextDom = document.getElementById(nextElement.id)
+			if (nextDom) {
+				focusElement(nextDom)
+				_selectedDom = nextDom
+			}
 		}
-		console.log(e.key, '> nextElement =', nextElement)
-		console.log(e.key, '> Navigator.tree =', Navigator.tree)
+		console.log(e.key, '> nextElement =', nextElement, Navigator.tree)
 	}
 }
 
@@ -220,20 +229,21 @@ Navigator.install = function (Vue, options) {
 			const componentNameId = that.$options.name + that._uid
 			const navigate = vnode.data.directives.find(dir => dir.arg === 'navigate')
 			element.id = componentNameId
+			element.tabIndex = _elementsCount++
 			// console.log('> mounter -> element: ', componentNameId, componentParentId)
 			const item = Navigator.registerFocusElement(componentParentId, componentNameId)
 			item.navigate = navigate ? navigate.modifiers : {}
 		},
 		unbind: (element, binding, vnode) => {
-		}
+		},
 	})
 	Vue.directive('selected', {
 		bind: (element, binding, vnode) => {
-			selectElement(_selectedDom != null ? _selectedDom : null, element)
+			focusElement(element)
 			_selectedDom = element
 		},
 		unbind: (element, binding, vnode) => {
-		}
+		},
 	})
 }
 
