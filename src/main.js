@@ -28,6 +28,6 @@ new Vue({
     // emit('ArrowLeft')
     // emit('ArrowLeft')
     // emit('ArrowUp')
-    console.clear()
+    // console.clear()
   }
 }).$mount("#app");

@@ -1,5 +1,6 @@
 let _selectedDom
 let _elementsCount
+let _callbacks = new Map()
 
 function findElement (id, parentElement) { // level can be removed
 	if (!parentElement) return null
@@ -31,6 +32,7 @@ class Element {
 class Navigator {
 	static tree
 	static idToElement
+	static EVENT_ANY = 'navigator_event_any'
 	
 	static init () {
 		window.removeEventListener('keyup', handleKeyUp)
@@ -41,13 +43,50 @@ class Navigator {
 		_selectedDom = null
 	}
 	
+	static subscribe (callback, events) {
+		const mapCallbackToEvent = (e, c) => {
+			if (_callbacks.has(e)) _callbacks.get(e).push(c)
+			else _callbacks.set(e, [c])
+		}
+		console.log('events instanceof String', typeof events)
+		if (events instanceof Array)
+			events.forEach((e) => mapCallbackToEvent(e, callback))
+		else if (typeof(events) === 'string' || events instanceof String)
+			mapCallbackToEvent(events, callback)
+		else
+			mapCallbackToEvent(Navigator.EVENT_ANY, callback)
+	}
+	
+	static unsubscribe (callback, events) {
+		const removeCallback = (e, c) => {
+			if (_callbacks.has(e))
+				if (c) _callbacks.get(e).splice(_callbacks[e].indexOf(c), 1)
+				else _callbacks.delete(e)
+		}
+		if (typeof(callback) === 'string' || callback instanceof String) {
+			removeCallback(callback)
+		} else if (callback instanceof Array)
+			callback.forEach((e) => removeCallback(e))
+		else {
+			if (events) {
+				if (events instanceof Array)
+					events.forEach((e) => removeCallback(e, callback))
+				else if (typeof(events) === 'string' || events instanceof String)
+					removeCallback(events, callback)
+			} else
+				removeCallback(Navigator.EVENT_ANY, callback)
+		}
+	}
+	
 	static findElementByID (id) {
 		let element
-		if (Navigator.idToElement.has(id)) {
-			element = Navigator.idToElement.get(id)
-		} else {
-			element = findElement(id, Navigator.tree)
-			Navigator.idToElement.set(id, element)
+		if (id) {
+			if (Navigator.idToElement.has(id)) { // look in cache
+				element = Navigator.idToElement.get(id)
+			} else {
+				element = findElement(id, Navigator.tree)
+				Navigator.idToElement.set(id, element) // cache
+			}
 		}
 		return element
 	}
@@ -118,20 +157,20 @@ function focusElement (next) {
 }
 
 function applyToElementParents(element, action) {
-	do {
+	while (element.pid) {
 		element = Navigator.findElementByID(element.pid)
-		element.pid && action(document.getElementById(element.id))
-	} while (element.pid)
+		element && element.pid && action(document.getElementById(element.id))
+	}
 }
 
 function removeSelectClassOnParents (element) {
-	console.log('> Navigator: removeSelectClassToDomWithId')
-	applyToElementParents(element, (domElement) => domElement.classList.remove('selected'))
+	// console.log('> Navigator: removeSelectClassToDomWithId')
+	element && applyToElementParents(element, (domElement) => domElement.classList.remove('selected'))
 }
 
 function addSelectClassOnParent (element) {
-	console.log('> Navigator: addSelectClassToDomWithId')
-	applyToElementParents(element, (domElement) => domElement.classList.add('selected'))
+	// console.log('> Navigator: addSelectClassToDomWithId')
+	element && applyToElementParents(element, (domElement) => domElement.classList.add('selected'))
 }
 
 const findNavigationOwnerUp = (from, direction, criteria) => {
@@ -217,7 +256,8 @@ const NAVIGATIONS = {
 }
 
 function handleKeyUp (e) {
-	const navigation = NAVIGATIONS[e.key]
+	const eventKey = e.key
+	const navigation = NAVIGATIONS[eventKey]
 	if (navigation) {
 		const nextElement = _selectedDom ? findNextElementWithRules(
 			Navigator.findElementByID(_selectedDom.id),
@@ -235,6 +275,13 @@ function handleKeyUp (e) {
 		}
 		console.log(e.key, '> nextElement =', nextElement, Navigator.tree)
 	}
+	
+	if (_callbacks.has(eventKey))
+		_callbacks.get(eventKey).forEach(c =>
+			c(eventKey, Navigator.findElementByID(_selectedDom?.id)))
+	if (_callbacks.has(Navigator.EVENT_ANY))
+	_callbacks.get(Navigator.EVENT_ANY).forEach(c =>
+		c(eventKey, Navigator.findElementByID(_selectedDom?.id)))
 }
 
 Navigator.install = function (Vue, options) {
@@ -258,6 +305,7 @@ Navigator.install = function (Vue, options) {
 		bind: (element, binding, vnode) => {
 			focusElement(element)
 			_selectedDom = element
+			console.log('> Navigator: selected =', _selectedDom)
 			addSelectClassOnParent(Navigator.findElementByID(element.id))
 		},
 		unbind: (element, binding, vnode) => {

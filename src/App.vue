@@ -39,6 +39,12 @@
     },
     beforeCreate() {
       Navigator.init()
+    },
+    mounted() {
+      Navigator.subscribe((event, element) => {
+        console.log('> App: onEnter =', event, element)
+        Navigator.unsubscribe('Enter')
+      }, 'Enter')
     }
   };
 </script>
