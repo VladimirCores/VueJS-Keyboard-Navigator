@@ -20,14 +20,14 @@ const emit = (event) => {
 new Vue({
   render: h => h(App),
   mounted() {
-    emit('ArrowDown')
-    emit('ArrowRight')
-    emit('ArrowRight')
-    emit('ArrowUp')
-    emit('ArrowDown')
-    emit('ArrowLeft')
-    emit('ArrowLeft')
-    emit('ArrowUp')
+    // emit('ArrowDown')
+    // emit('ArrowRight')
+    // emit('ArrowRight')
+    // emit('ArrowUp')
+    // emit('ArrowDown')
+    // emit('ArrowLeft')
+    // emit('ArrowLeft')
+    // emit('ArrowUp')
     console.clear()
   }
 }).$mount("#app");

@@ -4,7 +4,7 @@
     <Body v-focus:navigate.up.down :items="items" :getBlocks="getRandomBlockAmount"/>
     <div class="body">
       <Block v-focus:navigate.up.right class="block"></Block>
-      <Container v-focus:navigate.left.right class="parents">
+      <Container v-focus:navigate.left.right class="container">
         <Parent
           v-focus:navigate.up.down
           v-for="(item, index) in items"
@@ -44,40 +44,40 @@
 </script>
 
 <style scoped>
-  .special {
-    width: 100%;
-    display: block;
-  }
-  .body {
-    margin-top: 1rem;
-    box-sizing: border-box;
-    position: relative;
-  }
-  .block {
-    position: relative;
-    padding: 0.5rem;
-    margin-right: 1rem;
-    text-align: center;
-    background-color: whitesmoke;
-    font-weight: bold;
-    display: inline-block;
-    vertical-align: top;
-  }
-  .parents {
-    position: relative;
-    vertical-align:top;
-    display: inline-block;
-  }
-  #app {
-    margin: 21px;
-    text-align: left;
-    padding: 0;
-    position: relative;
-    overflow: hidden;
-    box-sizing: border-box;
-    font-family: "Avenir", Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    color: #2c3e50;
-  }
+.special {
+  width: 100%;
+  display: block;
+}
+.body {
+  margin-top: 1rem;
+  box-sizing: border-box;
+  position: relative;
+}
+.block {
+  position: relative;
+  padding: 0.5rem;
+  margin-right: 1rem;
+  text-align: center;
+  background-color: whitesmoke;
+  font-weight: bold;
+  display: inline-block;
+  vertical-align: top;
+}
+.container {
+  position: relative;
+  vertical-align:top;
+  display: inline-block;
+}
+#app {
+  margin: 21px;
+  text-align: left;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-family: "Avenir", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #2c3e50;
+}
 </style>

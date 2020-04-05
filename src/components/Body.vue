@@ -1,7 +1,7 @@
 <template>
     <div class="body">
         <Block v-focus:navigate.right.keepid class="block"></Block>
-        <Container v-focus:navigate.left.right class="parents">
+        <Container v-focus:navigate.left.right class="container">
             <span><b>Container</b></span>
             <Parent
                 v-focus:navigate.up.down.keepid
@@ -48,7 +48,7 @@ export default {
 .block:last-child {
     margin-left: 1rem;
 }
-.parents {
+.container {
     position: relative;
     vertical-align:top;
     margin: 0 1rem;
