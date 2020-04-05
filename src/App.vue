@@ -53,6 +53,9 @@
   box-sizing: border-box;
   position: relative;
 }
+.body.selected {
+  border: 1px solid red;
+}
 .block {
   position: relative;
   padding: 0.5rem;
@@ -68,6 +71,11 @@
   vertical-align:top;
   display: inline-block;
 }
+
+.container.selected {
+  border: green;
+}
+
 #app {
   margin: 21px;
   text-align: left;

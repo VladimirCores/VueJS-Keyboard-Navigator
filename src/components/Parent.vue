@@ -41,7 +41,9 @@ export default {
 .parent * :not(:last-child) {
     margin-right: 1px;
 }
-
+.parent.selected {
+    background-color: lightgreen;
+}
 .parent .index {
     padding: 0.25rem 0.5rem;
     margin-right: 0.5rem;

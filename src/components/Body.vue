@@ -48,10 +48,17 @@ export default {
 .block:last-child {
     margin-left: 1rem;
 }
+.block.selected {
+    background-color: lightgoldenrodyellow;
+}
 .container {
     position: relative;
     vertical-align:top;
     margin: 0 1rem;
     display: inline-block;
+}
+
+.container.selected {
+    background-color: lightblue;
 }
 </style>
