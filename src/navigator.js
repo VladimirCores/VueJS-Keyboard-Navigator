@@ -100,10 +100,41 @@ class Navigator {
 		return result
 	}
 	
+	static selectFirstElement () {
+		const element = Navigator.findFirstElement()
+		focusElement(_selectedDom, element.dom)
+		_selectedDom = element.dom
+		addSelectClassOnParent(element)
+	}
+	
 	static unregisterFocusElement (parent, child) {
 		if (parent) {
-			const parentElement = findElement(parent, Navigator.tree)
-			if (parentElement) delete parentElement[child]
+			const parentElement = Navigator.findElementByID(parent)
+			if (parentElement) {
+				const childElement = parentElement[child]
+				const childIndex = childElement.index
+				const children = parentElement.children
+				children.splice(childElement.index, 1)
+				children.forEach((cn, i) => { parentElement[cn].index = i })
+				console.log('\tunregisterFocusElement:', childElement)
+				console.log('\t\t| children', children)
+				if (childElement.inArray && children.length) {
+					if (childIndex === 0) {
+						const nextChildElement = parentElement[children[0]]
+						nextChildElement.first = true
+						if (children.length === 1)
+							nextChildElement.last = true
+					}
+					else if (childElement.index === parentElement.numChildren) {
+						const nextChildElement = parentElement[children[children.length - 1]]
+						nextChildElement.first = children.length === 1
+						nextChildElement.last = true
+					}
+					console.log('\t\t| parentElement', parentElement)
+				}
+				parentElement.numChildren--
+				delete parentElement[child]
+			}
 			if (Navigator.idToElement && Navigator.idToElement.has(child)) {
 				Navigator.idToElement.delete(child)
 			}
@@ -304,10 +335,17 @@ Navigator.install = function (Vue) {
 			const navigate = vnode.data.directives.find(dir => dir.arg === 'navigate')
 			element.id = componentNameId
 			element.tabIndex = _elementsCount++
-			// console.log('> bind: ', componentNameId)
+			console.log('> Navigator -> bind: ', componentNameId)
 			const item = Navigator.registerFocusElement(componentParentId, componentNameId)
 			item.navigate = navigate ? navigate.modifiers : {}
 			item.dom = element
+		},
+		unbind: (element, binding, vnode) => {
+			const that = vnode.componentInstance
+			const componentNameId = that.$options.name + that._uid
+			const componentParentId = that.$parent.$options.name + that.$parent._uid
+			console.log('> Navigator -> unbind: ', componentNameId)
+			Navigator.unregisterFocusElement(componentParentId, componentNameId)
 		}
 	})
 	Vue.directive('selected', {
